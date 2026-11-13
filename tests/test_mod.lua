@@ -48,7 +48,7 @@ local beefalo = { prefab = 'beefalo', components = { eater = eater,
 PushEvent = function(_, event, data) assert(event == 'eat' and data.full) end }
 prefabs.beefalo(beefalo)
 local feeder = {}
-for _, test in ipairs({ {'poop', .04, .002, 5}, {'guano', .02, .001, 3} }) do
+for _, test in ipairs({ {'poop', .04, .003, 5}, {'guano', .02, .0015, 3} }) do
     local food = { prefab = test[1] }
     assert(eater:CanEat(food) and eater:PrefersToEat(food))
     local available = {}; actions.USEITEM(food, feeder, beefalo, available, true)
