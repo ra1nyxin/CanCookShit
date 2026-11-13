@@ -8,9 +8,12 @@ local function IsManure(item)
 end
 
 local function OnEaten(item, eater)
-    if eater ~= nil and eater:HasTag("player") and eater.components.talker ~= nil then
+    if eater ~= nil and eater:HasTag("player") then
+        if eater.components.manurebuff ~= nil then
+            eater.components.manurebuff:Apply(item.prefab)
+        end
         local speech = lines[eater.prefab] or lines.generic
-        eater.components.talker:Say(speech[item.prefab])
+        if eater.components.talker ~= nil then eater.components.talker:Say(speech[item.prefab]) end
     end
 end
 
@@ -81,6 +84,7 @@ end)
 
 AddPlayerPostInit(function(inst)
     if not G.TheWorld.ismastersim or inst.components.eater == nil then return end
+    inst:AddComponent("manurebuff")
     local eater = inst.components.eater
     local old_can_eat, old_prefers = eater.CanEat, eater.PrefersToEat
     eater.CanEat = function(self, food, ...)

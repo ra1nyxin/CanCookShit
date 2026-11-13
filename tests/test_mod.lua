@@ -23,7 +23,7 @@ for _, name in ipairs({'poop', 'guano'}) do
     local available = {}; actions.INVENTORY(item, player, available); assert(available[1] == GLOBAL.ACTIONS.EAT)
     available = {}; actions.USEITEM(item, player, player, available, true); assert(available[1] == GLOBAL.ACTIONS.FEEDPLAYER)
     local eater = { CanEat = function() return false end, PrefersToEat = function() return false end }
-    player.components.eater = eater; playerinit(player)
+    player.components.eater = eater; player.AddComponent = function() end; playerinit(player)
     assert(eater:CanEat(item) and eater:PrefersToEat(item))
     assert(not eater:CanEat({prefab='berries'}) and not eater:PrefersToEat({prefab='berries'}))
 end
