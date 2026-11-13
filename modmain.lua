@@ -41,6 +41,42 @@ AddComponentAction("USEITEM", "inventoryitem", function(inst, doer, target, acti
         and not G.table.contains(actions, G.ACTIONS.FEEDPLAYER) then
         table.insert(actions, G.ACTIONS.FEEDPLAYER)
     end
+    if right and IsManure(inst) and target.prefab == "beefalo" and target:HasTag("trader")
+        and not G.table.contains(actions, G.ACTIONS.FEED) then
+        table.insert(actions, G.ACTIONS.FEED)
+    end
+end)
+
+AddPrefabPostInit("beefalo", function(inst)
+    if not G.TheWorld.ismastersim or inst.components.eater == nil then return end
+    local eater = inst.components.eater
+    local old_can_eat, old_prefers, old_on_eat = eater.CanEat, eater.PrefersToEat, eater.oneatfn
+    eater.CanEat = function(self, food, ...)
+        return IsManure(food) or old_can_eat(self, food, ...)
+    end
+    eater.PrefersToEat = function(self, food, ...)
+        return IsManure(food) or old_prefers(self, food, ...)
+    end
+    eater:SetOnEatFn(function(beefalo, food, feeder)
+        if not IsManure(food) then
+            if old_on_eat ~= nil then old_on_eat(beefalo, food, feeder) end
+            return
+        end
+        local poop = food.prefab == "poop"
+        local domesticatable = beefalo.components.domesticatable
+        if domesticatable ~= nil then
+            domesticatable:DeltaObedience(poop and .04 or .02)
+            domesticatable:DeltaDomestication(poop and .002 or .001, feeder)
+            domesticatable:TryBecomeDomesticated()
+        end
+        if beefalo.components.health ~= nil then
+            beefalo.components.health:DoDelta(poop and 5 or 3, nil, food.prefab)
+        end
+        beefalo:PushEvent("eat", { full = beefalo.components.hunger:GetPercent() >= 1, food = food })
+        if beefalo.components.knownlocations ~= nil then
+            beefalo.components.knownlocations:RememberLocation("loiteranchor", beefalo:GetPosition())
+        end
+    end)
 end)
 
 AddPlayerPostInit(function(inst)

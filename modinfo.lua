@@ -1,7 +1,7 @@
 name = "能煮屎 / CanCookShit"
 description = "粪肥和鸟粪可以食用、烹饪和喂给其他玩家。"
 author = "ra1nyxin"
-version = "1.0.0"
+version = "1.0.1"
 api_version = 10
 dst_compatible = true
 all_clients_require_mod = true
