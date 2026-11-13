@@ -66,7 +66,7 @@ AddPrefabPostInit("beefalo", function(inst)
         local domesticatable = beefalo.components.domesticatable
         if domesticatable ~= nil then
             domesticatable:DeltaObedience(poop and .04 or .02)
-            domesticatable:DeltaDomestication(poop and .003 or .0015, feeder)
+            domesticatable:DeltaDomestication(poop and .01 or .008, feeder)
             domesticatable:TryBecomeDomesticated()
         end
         if beefalo.components.health ~= nil then
