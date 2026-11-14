@@ -15,6 +15,7 @@ for _, name in ipairs({'poop', 'guano'}) do
     function item:AddComponent(name) self.components[name] = { SetOnEatenFn = function(self, fn) self.oneaten = fn end } end
     prefabs[name](item)
     local e = item.components.edible
+    assert(item.components.tradable.goldvalue == (name == 'poop' and 3 or 5))
     assert(e.hungervalue == (name == 'poop' and 8 or 6))
     assert(e.sanityvalue == (name == 'poop' and -15 or -25) and e.healthvalue == 0)
     assert(tags.saltbox_valid and tags.icebox_valid and tags.edible_GENERIC and not tags.badfood)

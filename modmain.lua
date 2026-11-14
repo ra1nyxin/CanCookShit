@@ -23,6 +23,8 @@ for _, name in ipairs({ "poop", "guano" }) do
         inst:AddTag("saltbox_valid")
         inst:AddTag("icebox_valid")
         if not G.TheWorld.ismastersim then return end
+        if inst.components.tradable == nil then inst:AddComponent("tradable") end
+        inst.components.tradable.goldvalue = name == "poop" and 3 or 5
         inst:AddComponent("edible")
         inst.components.edible.healthvalue = 0
         inst.components.edible.hungervalue = name == "poop" and 8 or 6
