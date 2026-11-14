@@ -1,6 +1,66 @@
 local G = GLOBAL
 local lines = require "can_cook_shit_speech"
 
+local RPC_NAMESPACE = "cancookshit_shift"
+local HOLD_INTERVAL = 5
+local LEASE_SECONDS = 2
+
+local function StopPooping(player)
+    if player._cancookshit_task ~= nil then
+        player._cancookshit_task:Cancel()
+        player._cancookshit_task = nil
+    end
+    player._cancookshit_until = nil
+    player._cancookshit_next = nil
+end
+
+AddModRPCHandler(RPC_NAMESPACE, "hold", function(player, holding)
+    if player == nil or not player:IsValid() or type(holding) ~= "boolean" then return end
+    if not holding or player:HasTag("playerghost") or player.components.health == nil
+        or player.components.health:IsDead() then
+        StopPooping(player)
+        return
+    end
+    player._cancookshit_until = G.GetTime() + LEASE_SECONDS
+    if player._cancookshit_task == nil then
+        player._cancookshit_next = G.GetTime() + HOLD_INTERVAL
+        player._cancookshit_task = player:DoPeriodicTask(.25, function(inst)
+            if not inst:IsValid() or inst:HasTag("playerghost") or inst.components.health == nil
+                or inst.components.health:IsDead() or inst._cancookshit_until == nil
+                or G.GetTime() > inst._cancookshit_until then
+                StopPooping(inst)
+                return
+            end
+            if G.GetTime() >= inst._cancookshit_next then
+                inst._cancookshit_next = G.GetTime() + HOLD_INTERVAL
+                local item = G.SpawnPrefab("poop")
+                if item ~= nil and item:IsValid() and item.Physics ~= nil then
+                    G.Launch2(item, inst, 1, 1, .2, .1, 2)
+                elseif item ~= nil and item:IsValid() then
+                    item:Remove()
+                end
+            end
+        end)
+    end
+end)
+
+local function StartLocalShiftMonitor(inst)
+    if inst.DoPeriodicTask == nil or G.TheNet:IsDedicated() then return end
+    local active, lastsend = false, 0
+    inst:DoPeriodicTask(.2, function(player)
+        if G.ThePlayer ~= player then return end
+        local held = player:IsValid() and not player:HasTag("playerghost")
+            and player.HUD ~= nil and G.TheFrontEnd ~= nil
+            and G.TheFrontEnd:GetActiveScreen() == player.HUD
+            and G.TheInput ~= nil and G.TheInput:IsKeyDown(G.KEY_SHIFT)
+        local now = G.GetTime()
+        if held ~= active or (held and now - lastsend >= .5) then
+            SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "hold"), held)
+            active, lastsend = held, now
+        end
+    end)
+end
+
 AddIngredientValues({ "poop", "guano" }, { meat = .5, monster = .5 })
 
 local function IsManure(item)
@@ -85,6 +145,7 @@ AddPrefabPostInit("beefalo", function(inst)
 end)
 
 AddPlayerPostInit(function(inst)
+    StartLocalShiftMonitor(inst)
     if not G.TheWorld.ismastersim or inst.components.eater == nil then return end
     inst:AddComponent("manurebuff")
     local eater = inst.components.eater

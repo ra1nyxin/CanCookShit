@@ -1,7 +1,7 @@
 name = "能煮屎 / CanCookShit"
 description = "粪肥和鸟粪可以食用、入锅、喂食、向猪王换金，还能暂时恒温并减缓饥饿。"
 author = "ra1nyxin"
-version = "1.0.7"
+version = "1.0.8"
 api_version = 10
 dst_compatible = true
 all_clients_require_mod = true

@@ -1,6 +1,7 @@
 local prefabs, actions, playerinit, ingredients = {}, {}, nil, nil
 GLOBAL = { FOODTYPE = { GENERIC = 'GENERIC' }, TheWorld = { ismastersim = true }, ACTIONS = { EAT = {}, FEED = {}, FEEDPLAYER = {} }, table = { contains = function(t, v) for _, x in ipairs(t) do if x == v then return true end end return false end } }
 AddIngredientValues = function(names, tags) ingredients = { names = names, tags = tags } end
+AddModRPCHandler = function() end
 AddPrefabPostInit = function(name, fn) prefabs[name] = fn end
 AddComponentAction = function(kind, component, fn) actions[kind] = fn end
 AddPlayerPostInit = function(fn) playerinit = fn end
