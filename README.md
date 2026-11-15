@@ -12,6 +12,7 @@
 沃利的便携烹饪锅部署后也可以使用这两种食材。
 喂皮弗娄牛可增加顺从、驯服、生命和饱食：粪肥分别为 4%、1%、5 和 8；鸟粪为 2%、0.8%、3 和 6。
 游戏中按住 Shift 五秒会掉落一份粪肥，持续按住则每五秒掉落一份。
+给猪人粪肥可雇佣 2 小时，鸟粪可雇佣 4 小时（现实时间）。
 
 服务器和所有客户端都需要启用此模组。
 
@@ -28,3 +29,5 @@ Feeding a beefalo manure grants 4% obedience, 1% domestication, 5 health and 8 h
 Manure keeps body temperature at 25 degrees for 30 minutes and halves hunger drain for 5 minutes. Guano keeps temperature stable for 5 minutes and halves hunger drain for 15 minutes. Eating either resets each timer to that food's duration; effects do not stack and end on death. Warly's deployed portable crock pot accepts both ingredients.
 
 Hold Shift for five seconds to drop manure; keep holding to drop one every five seconds.
+
+Give manure to a pig to hire it for 2 real-time hours, or guano for 4 hours.

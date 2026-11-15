@@ -30,6 +30,23 @@ for _, name in ipairs({'poop', 'guano'}) do
     assert(not eater:CanEat({prefab='berries'}) and not eater:PrefersToEat({prefab='berries'}))
 end
 local speech = require 'can_cook_shit_speech'
+GLOBAL.TUNING = { PIG_FULL_LOYALTY_PERCENT = .9 }
+local loyalty, original = 0, 0
+local follower = { maxfollowtime = 1200, GetLeader = function() return nil end,
+    AddLoyaltyTime = function(self, n) assert(self.maxfollowtime >= n); loyalty = n end }
+local trader = { test = function() return false end, onaccept = function() original = original + 1 end }
+local pig = { components = { trader = trader, follower = follower,
+    combat = { TargetIs = function() return false end } }, HasTag = function() return false end }
+local giver = { components = { leader = { AddFollower = function() end } },
+    IsValid = function() return true end, HasTag = function() return false end, PushEvent = function() end }
+prefabs.pigman(pig)
+for _, case in ipairs({ {'poop',7200}, {'guano',14400} }) do
+    local item = { prefab = case[1], IsValid = function() return true end,
+        components = { edible = {}, inventoryitem = { GetGrandOwner = function() return pig end } } }
+    assert(trader.test(pig,item,giver)); trader.onaccept(pig,giver,item)
+    assert(loyalty == case[2] and follower.maxfollowtime == 1200)
+end
+assert(original == 2 and trader.test(pig,{prefab='meat'},giver) == false)
 for _, name in ipairs({'wilson','willow','wolfgang','wendy','wx78','wickerbottom','woodie','wes','waxwell','wathgrithr','webber','winona','warly','wortox','wormwood','wurt','walter','wanda','wonkey','generic'}) do
     assert(speech[name] and speech[name].poop and speech[name].guano, name)
 end

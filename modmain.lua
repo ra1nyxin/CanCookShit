@@ -112,6 +112,48 @@ AddComponentAction("USEITEM", "inventoryitem", function(inst, doer, target, acti
     end
 end)
 
+AddPrefabPostInit("pigman", function(inst)
+    if not G.TheWorld.ismastersim or inst.components == nil then return end
+    local trader = inst.components.trader
+    if trader == nil then return end
+    local old_test, old_accept = trader.test, trader.onaccept
+    trader.test = function(pig, item, giver, ...)
+        if IsManure(item) then
+            local follower = pig.components.follower
+            return item.components.edible ~= nil and follower ~= nil and
+                (follower:GetLeader() == nil or follower:GetLoyaltyPercent() <= G.TUNING.PIG_FULL_LOYALTY_PERCENT)
+        end
+        return old_test == nil or old_test(pig, item, giver, ...)
+    end
+    trader.onaccept = function(pig, giver, item, ...)
+        if old_accept ~= nil then old_accept(pig, giver, item, ...) end
+        if not IsManure(item) or giver == nil or not giver:IsValid() or giver.components == nil then return end
+        local follower, combat = pig.components.follower, pig.components.combat
+        local inventoryitem = item.components ~= nil and item.components.inventoryitem or nil
+        if follower == nil or combat == nil or inventoryitem == nil then return end
+        local received = item:IsValid() and inventoryitem:GetGrandOwner() == pig
+        if not received and not item:IsValid() and pig.components.inventory ~= nil then
+            received = pig.components.inventory:FindItem(function(obj)
+                return obj.prefab == item.prefab and obj.components.stackable ~= nil
+                    and obj.components.stackable:IsStack()
+            end) ~= nil
+        end
+        if not received then return end
+        if combat:TargetIs(giver) then
+            combat:SetTarget(nil)
+        elseif giver.components.leader ~= nil and not (pig:HasTag("guard") or giver:HasTag("monster") or giver:HasTag("merm"))
+            and giver.components.minigame_participator == nil then
+            giver:PushEvent("makefriend")
+            giver.components.leader:AddFollower(pig)
+            local old_max = follower.maxfollowtime
+            local duration = item.prefab == "poop" and 7200 or 14400
+            follower.maxfollowtime = math.max(old_max or 0, 14400)
+            follower:AddLoyaltyTime(duration)
+            follower.maxfollowtime = old_max
+        end
+    end
+end)
+
 AddPrefabPostInit("beefalo", function(inst)
     if not G.TheWorld.ismastersim or inst.components.eater == nil then return end
     local eater = inst.components.eater
