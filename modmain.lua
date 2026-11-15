@@ -62,7 +62,7 @@ local function StartLocalShiftMonitor(inst)
 end
 
 AddIngredientValues({ "poop" }, { meat = .5, monster = .5 })
-AddIngredientValues({ "guano" }, { meat = .5, monster = .5, dairy = .5 })
+AddIngredientValues({ "guano" }, { monster = .5, dairy = .5 })
 
 local function IsManure(item)
     return item ~= nil and (item.prefab == "poop" or item.prefab == "guano")
@@ -173,12 +173,15 @@ AddPrefabPostInit("beefalo", function(inst)
         local poop = food.prefab == "poop"
         local domesticatable = beefalo.components.domesticatable
         if domesticatable ~= nil then
-            domesticatable:DeltaObedience(poop and .04 or .02)
-            domesticatable:DeltaDomestication(poop and .01 or .008, feeder)
+            domesticatable:DeltaObedience(poop and .05 or .03)
+            domesticatable:DeltaDomestication(poop and .012 or .01, feeder)
             domesticatable:TryBecomeDomesticated()
         end
         if beefalo.components.health ~= nil then
-            beefalo.components.health:DoDelta(poop and 5 or 3, nil, food.prefab)
+            beefalo.components.health:DoDelta(poop and 6 or 4, nil, food.prefab)
+        end
+        if beefalo.components.hunger ~= nil then
+            beefalo.components.hunger:DoDelta(2)
         end
         beefalo:PushEvent("eat", { full = beefalo.components.hunger:GetPercent() >= 1, food = food })
         if beefalo.components.knownlocations ~= nil then

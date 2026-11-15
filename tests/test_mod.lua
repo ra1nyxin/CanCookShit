@@ -8,7 +8,7 @@ AddPlayerPostInit = function(fn) playerinit = fn end
 package.path = 'scripts/?.lua;' .. package.path
 dofile('modmain.lua')
 assert(ingredients.poop.meat == .5 and ingredients.poop.monster == .5 and ingredients.poop.dairy == nil)
-assert(ingredients.guano.meat == .5 and ingredients.guano.monster == .5 and ingredients.guano.dairy == .5)
+assert(ingredients.guano.meat == nil and ingredients.guano.monster == .5 and ingredients.guano.dairy == .5)
 for _, name in ipairs({'poop', 'guano'}) do
     local tags = {}
     local item = { prefab = name, components = {} }
@@ -63,18 +63,19 @@ local beefalo = { prefab = 'beefalo', components = { eater = eater,
         TryBecomeDomesticated = function() effects.checked = true end,
     },
     health = { DoDelta = function(_, n) effects.health = n end },
-    hunger = { GetPercent = function() return 1 end },
+    hunger = { GetPercent = function() return 1 end, DoDelta = function(_, n) effects.hunger = n end },
 }, HasTag = function(_, tag) return tag == 'trader' end,
 PushEvent = function(_, event, data) assert(event == 'eat' and data.full) end }
 prefabs.beefalo(beefalo)
 local feeder = {}
-for _, test in ipairs({ {'poop', .04, .01, 5}, {'guano', .02, .008, 3} }) do
+for _, test in ipairs({ {'poop', .05, .012, 6}, {'guano', .03, .01, 4} }) do
     local food = { prefab = test[1] }
     assert(eater:CanEat(food) and eater:PrefersToEat(food))
     local available = {}; actions.USEITEM(food, feeder, beefalo, available, true)
     assert(available[1] == GLOBAL.ACTIONS.FEED)
     eater.oneatfn(beefalo, food, feeder)
     assert(effects.obedience == test[2] and effects.domestication == test[3] and effects.health == test[4])
+    assert(effects.hunger == 2)
     assert(effects.feeder == feeder and effects.checked)
 end
 eater.oneatfn(beefalo, {prefab = 'cutgrass'}, feeder)
