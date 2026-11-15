@@ -3,60 +3,34 @@ local lines = require "can_cook_shit_speech"
 
 local RPC_NAMESPACE = "cancookshit_shift"
 local HOLD_INTERVAL = 5
-local LEASE_SECONDS = 2
-
-local function StopPooping(player)
-    if player._cancookshit_task ~= nil then
-        player._cancookshit_task:Cancel()
-        player._cancookshit_task = nil
-    end
-    player._cancookshit_until = nil
-    player._cancookshit_next = nil
-end
-
-AddModRPCHandler(RPC_NAMESPACE, "hold", function(player, holding)
-    if player == nil or not player:IsValid() or type(holding) ~= "boolean" then return end
-    if not holding or player:HasTag("playerghost") or player.components.health == nil
-        or player.components.health:IsDead() then
-        StopPooping(player)
-        return
-    end
-    player._cancookshit_until = G.GetTime() + LEASE_SECONDS
-    if player._cancookshit_task == nil then
-        player._cancookshit_next = G.GetTime() + HOLD_INTERVAL
-        player._cancookshit_task = player:DoPeriodicTask(.25, function(inst)
-            if not inst:IsValid() or inst:HasTag("playerghost") or inst.components.health == nil
-                or inst.components.health:IsDead() or inst._cancookshit_until == nil
-                or G.GetTime() > inst._cancookshit_until then
-                StopPooping(inst)
-                return
-            end
-            if G.GetTime() >= inst._cancookshit_next then
-                inst._cancookshit_next = G.GetTime() + HOLD_INTERVAL
-                local item = G.SpawnPrefab("poop")
-                if item ~= nil and item:IsValid() and item.Physics ~= nil then
-                    G.Launch2(item, inst, 1, 1, .2, .1, 2)
-                elseif item ~= nil and item:IsValid() then
-                    item:Remove()
-                end
-            end
-        end)
+AddModRPCHandler(RPC_NAMESPACE, "drop", function(player)
+    if player == nil or not player:IsValid() or player:HasTag("playerghost")
+        or player.components.health == nil or player.components.health:IsDead() then return end
+    local item = G.SpawnPrefab("poop")
+    if item ~= nil and item:IsValid() and item.Physics ~= nil then
+        G.Launch2(item, player, 1, 1, .2, .1, 2)
+    elseif item ~= nil and item:IsValid() then
+        item:Remove()
     end
 end)
 
 local function StartLocalShiftMonitor(inst)
     if inst.DoPeriodicTask == nil or G.TheNet:IsDedicated() then return end
-    local active, lastsend = false, 0
+    local next_drop
     inst:DoPeriodicTask(.2, function(player)
-        if G.ThePlayer ~= player then return end
+        if G.ThePlayer ~= player then next_drop = nil; return end
         local held = player:IsValid() and not player:HasTag("playerghost")
             and player.HUD ~= nil and G.TheFrontEnd ~= nil
             and G.TheFrontEnd:GetActiveScreen() == player.HUD
             and G.TheInput ~= nil and G.TheInput:IsKeyDown(G.KEY_SHIFT)
         local now = G.GetTime()
-        if held ~= active or (held and now - lastsend >= .5) then
-            SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "hold"), held)
-            active, lastsend = held, now
+        if not held then
+            next_drop = nil
+        elseif next_drop == nil then
+            next_drop = now + HOLD_INTERVAL
+        elseif now >= next_drop then
+            SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "drop"))
+            next_drop = now + HOLD_INTERVAL
         end
     end)
 end
