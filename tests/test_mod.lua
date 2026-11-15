@@ -1,13 +1,14 @@
-local prefabs, actions, playerinit, ingredients = {}, {}, nil, nil
+local prefabs, actions, playerinit, ingredients = {}, {}, nil, {}
 GLOBAL = { FOODTYPE = { GENERIC = 'GENERIC' }, TheWorld = { ismastersim = true }, ACTIONS = { EAT = {}, FEED = {}, FEEDPLAYER = {} }, table = { contains = function(t, v) for _, x in ipairs(t) do if x == v then return true end end return false end } }
-AddIngredientValues = function(names, tags) ingredients = { names = names, tags = tags } end
+AddIngredientValues = function(names, tags) for _, name in ipairs(names) do ingredients[name] = tags end end
 AddModRPCHandler = function() end
 AddPrefabPostInit = function(name, fn) prefabs[name] = fn end
 AddComponentAction = function(kind, component, fn) actions[kind] = fn end
 AddPlayerPostInit = function(fn) playerinit = fn end
 package.path = 'scripts/?.lua;' .. package.path
 dofile('modmain.lua')
-assert(ingredients.tags.meat == .5 and ingredients.tags.monster == .5)
+assert(ingredients.poop.meat == .5 and ingredients.poop.monster == .5 and ingredients.poop.dairy == nil)
+assert(ingredients.guano.meat == .5 and ingredients.guano.monster == .5 and ingredients.guano.dairy == .5)
 for _, name in ipairs({'poop', 'guano'}) do
     local tags = {}
     local item = { prefab = name, components = {} }

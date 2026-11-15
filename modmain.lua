@@ -61,7 +61,8 @@ local function StartLocalShiftMonitor(inst)
     end)
 end
 
-AddIngredientValues({ "poop", "guano" }, { meat = .5, monster = .5 })
+AddIngredientValues({ "poop" }, { meat = .5, monster = .5 })
+AddIngredientValues({ "guano" }, { meat = .5, monster = .5, dairy = .5 })
 
 local function IsManure(item)
     return item ~= nil and (item.prefab == "poop" or item.prefab == "guano")
