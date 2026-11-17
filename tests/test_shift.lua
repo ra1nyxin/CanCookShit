@@ -14,7 +14,7 @@ AddPrefabPostInitAny = function() end
 AddComponentAction = function() end
 AddPlayerPostInit = function(fn) playerinit = fn end
 AddAction = function(_, _, fn) return { fn = fn } end
-ActionHandler = function() return {} end
+GLOBAL.ActionHandler = function() return {} end
 AddStategraphActionHandler = function() end
 GetModRPC = function() return {} end
 SendModRPCToServer = function() requests = requests + 1 end

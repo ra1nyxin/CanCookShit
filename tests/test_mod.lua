@@ -3,14 +3,17 @@ GLOBAL = { FOODTYPE = { GENERIC = 'GENERIC' }, TheWorld = { ismastersim = true }
 AddIngredientValues = function(names, tags) for _, name in ipairs(names) do ingredients[name] = tags end end
 AddModRPCHandler = function() end
 AddAction = function(_, _, fn) repair_action = { fn = fn }; return repair_action end
-ActionHandler = function(action, state) return { action = action, state = state } end
-AddStategraphActionHandler = function() end
+GLOBAL.ActionHandler = function(action, state) return { action = action, state = state } end
+local handlers = {}
+AddStategraphActionHandler = function(graph, handler) handlers[graph] = handler end
 AddPrefabPostInitAny = function(fn) _G.anypostinit = fn end
 AddPrefabPostInit = function(name, fn) prefabs[name] = fn end
 AddComponentAction = function(kind, component, fn) actions[kind] = fn end
 AddPlayerPostInit = function(fn) playerinit = fn end
 package.path = 'scripts/?.lua;' .. package.path
 dofile('modmain.lua')
+assert(handlers.wilson.action == repair_action and handlers.wilson.state == 'dolongaction')
+assert(handlers.wilson_client.action == repair_action and handlers.wilson_client.state == 'dolongaction')
 assert(ingredients.poop.meat == .5 and ingredients.poop.monster == .5 and ingredients.poop.dairy == nil)
 assert(ingredients.guano.meat == nil and ingredients.guano.monster == .5 and ingredients.guano.dairy == .5)
 for _, name in ipairs({'poop', 'guano'}) do

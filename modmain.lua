@@ -5,6 +5,10 @@ local RPC_NAMESPACE = "cancookshit_shift"
 local HOLD_INTERVAL = 5
 local REPAIR_TAG = "cancookshit_repairable"
 
+print("[CanCookShit] startup: ActionHandler=" .. type(G.ActionHandler)
+    .. ", AddAction=" .. type(AddAction)
+    .. ", AddStategraphActionHandler=" .. type(AddStategraphActionHandler))
+
 local function IsManure(item)
     return item ~= nil and (item.prefab == "poop" or item.prefab == "guano")
 end
@@ -70,8 +74,8 @@ local repair_action = AddAction("CANCOOKSHIT_REPAIR", "用屎修补", function(a
 end)
 repair_action.rmb = true
 repair_action.mount_valid = true
-AddStategraphActionHandler("wilson", ActionHandler(repair_action, "dolongaction"))
-AddStategraphActionHandler("wilson_client", ActionHandler(repair_action, "dolongaction"))
+AddStategraphActionHandler("wilson", G.ActionHandler(repair_action, "dolongaction"))
+AddStategraphActionHandler("wilson_client", G.ActionHandler(repair_action, "dolongaction"))
 AddModRPCHandler(RPC_NAMESPACE, "drop", function(player)
     if player == nil or not player:IsValid() or player:HasTag("playerghost")
         or player.components.health == nil or player.components.health:IsDead() then return end
