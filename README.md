@@ -13,6 +13,7 @@
 喂皮弗娄牛可增加顺从、驯服、生命和饱食：粪肥分别为 5%、1.2%、6 和 10；鸟粪为 3%、1%、4 和 8。
 游戏中按住 Shift 五秒会掉落一份粪肥，持续按住则每五秒掉落一份。
 给猪人粪肥可雇佣 2 小时，鸟粪可雇佣 4 小时（现实时间）。
+手持粪肥或鸟粪对着未满耐久或未满使用次数的物品右键，可以用一份食材恢复目标最大值的一半；支持使用次数、燃料值和护甲耐久，包括亮茄盔甲。
 
 服务器和所有客户端都需要启用此模组。
 
@@ -31,3 +32,5 @@ Manure keeps body temperature at 25 degrees for 30 minutes and halves hunger dra
 Hold Shift for five seconds to drop manure; keep holding to drop one every five seconds.
 
 Give manure to a pig to hire it for 2 real-time hours, or guano for 4 hours.
+
+With manure or guano in hand, right-click an item with missing durability or uses to restore half of its maximum with one piece. This supports finite uses, fuel, and armor durability, including Lunar Plant armor.

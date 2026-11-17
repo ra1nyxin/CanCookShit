@@ -1,7 +1,11 @@
-local prefabs, actions, playerinit, ingredients = {}, {}, nil, {}
+local prefabs, actions, playerinit, ingredients, repair_action = {}, {}, nil, {}, nil
 GLOBAL = { FOODTYPE = { GENERIC = 'GENERIC' }, TheWorld = { ismastersim = true }, ACTIONS = { EAT = {}, FEED = {}, FEEDPLAYER = {} }, table = { contains = function(t, v) for _, x in ipairs(t) do if x == v then return true end end return false end } }
 AddIngredientValues = function(names, tags) for _, name in ipairs(names) do ingredients[name] = tags end end
 AddModRPCHandler = function() end
+AddAction = function(_, _, fn) repair_action = { fn = fn }; return repair_action end
+ActionHandler = function(action, state) return { action = action, state = state } end
+AddStategraphActionHandler = function() end
+AddPrefabPostInitAny = function(fn) _G.anypostinit = fn end
 AddPrefabPostInit = function(name, fn) prefabs[name] = fn end
 AddComponentAction = function(kind, component, fn) actions[kind] = fn end
 AddPlayerPostInit = function(fn) playerinit = fn end
@@ -80,4 +84,20 @@ for _, test in ipairs({ {'poop', .05, .012, 6}, {'guano', .03, .01, 4} }) do
 end
 eater.oneatfn(beefalo, {prefab = 'cutgrass'}, feeder)
 assert(original_calls == 1)
+
+local removed, finite_target = false, {
+    components = { finiteuses = { total = 100, current = 0, Repair = function(self, amount) self.current = self.current + amount end } },
+    IsValid = function() return true end,
+    AddOrRemoveTag = function() end,
+}
+local manure = { prefab = 'poop', IsValid = function() return not removed end, Remove = function() removed = true end }
+local repairer = { components = { inventory = {
+    RemoveItem = function(_, item) assert(item == manure); return manure end,
+    GiveItem = function() error('should not refund a successful repair') end,
+} } }
+assert(repair_action.fn({ target = finite_target, invobject = manure, doer = repairer }))
+assert(finite_target.components.finiteuses.current == 50)
+removed = true
+local full_target = { components = { fueled = { maxfuel = 100, currentfuel = 100 } }, IsValid = function() return true end, AddOrRemoveTag = function() end }
+assert(not repair_action.fn({ target = full_target, invobject = manure, doer = repairer }))
 print('mod tests passed')

@@ -3,6 +3,75 @@ local lines = require "can_cook_shit_speech"
 
 local RPC_NAMESPACE = "cancookshit_shift"
 local HOLD_INTERVAL = 5
+local REPAIR_TAG = "cancookshit_repairable"
+
+local function IsManure(item)
+    return item ~= nil and (item.prefab == "poop" or item.prefab == "guano")
+end
+
+local function GetRepairKind(target)
+    if target == nil or target.components == nil then return nil end
+    local finiteuses = target.components.finiteuses
+    if finiteuses ~= nil and finiteuses.total ~= nil and finiteuses.total > 0
+        and finiteuses.current ~= nil and finiteuses.current < finiteuses.total then
+        return "finiteuses"
+    end
+    local fueled = target.components.fueled
+    if fueled ~= nil and fueled.maxfuel ~= nil and fueled.maxfuel > 0
+        and fueled.currentfuel ~= nil and fueled.currentfuel < fueled.maxfuel then
+        return "fueled"
+    end
+    local armor = target.components.armor
+    if armor ~= nil and armor.maxcondition ~= nil and armor.maxcondition > 0
+        and armor.condition ~= nil and armor.condition < armor.maxcondition then
+        return "armor"
+    end
+end
+
+local function RefreshRepairTag(inst)
+    if inst == nil or not inst:IsValid() or not G.TheWorld.ismastersim then return end
+    inst:AddOrRemoveTag(REPAIR_TAG, GetRepairKind(inst) ~= nil)
+end
+
+AddPrefabPostInitAny(function(inst)
+    if not G.TheWorld.ismastersim or inst == nil or inst.components == nil then return end
+    if inst.components.finiteuses ~= nil or inst.components.fueled ~= nil or inst.components.armor ~= nil then
+        inst:ListenForEvent("percentusedchange", RefreshRepairTag)
+        inst:DoTaskInTime(0, RefreshRepairTag)
+    end
+end)
+
+local repair_action = AddAction("CANCOOKSHIT_REPAIR", "用屎修补", function(act)
+    local target, manure = act.target, act.invobject
+    if target == nil or not target:IsValid() or not IsManure(manure) then return false end
+    local kind = GetRepairKind(target)
+    local inventory = act.doer ~= nil and act.doer.components.inventory or nil
+    if kind == nil or inventory == nil then return false end
+    local removed = inventory:RemoveItem(manure)
+    if removed == nil then return false end
+    local repaired = false
+    if kind == "finiteuses" then
+        target.components.finiteuses:Repair(target.components.finiteuses.total * .5)
+        repaired = true
+    elseif kind == "fueled" then
+        target.components.fueled:DoDelta(target.components.fueled.maxfuel * .5, act.doer)
+        repaired = true
+    elseif kind == "armor" then
+        target.components.armor:Repair(target.components.armor.maxcondition * .5)
+        repaired = true
+    end
+    if repaired then
+        if removed:IsValid() then removed:Remove() end
+        RefreshRepairTag(target)
+        return true
+    end
+    inventory:GiveItem(removed)
+    return false
+end)
+repair_action.rmb = true
+repair_action.mount_valid = true
+AddStategraphActionHandler("wilson", ActionHandler(repair_action, "dolongaction"))
+AddStategraphActionHandler("wilson_client", ActionHandler(repair_action, "dolongaction"))
 AddModRPCHandler(RPC_NAMESPACE, "drop", function(player)
     if player == nil or not player:IsValid() or player:HasTag("playerghost")
         or player.components.health == nil or player.components.health:IsDead() then return end
@@ -37,10 +106,6 @@ end
 
 AddIngredientValues({ "poop" }, { meat = .5, monster = .5 })
 AddIngredientValues({ "guano" }, { monster = .5, dairy = .5 })
-
-local function IsManure(item)
-    return item ~= nil and (item.prefab == "poop" or item.prefab == "guano")
-end
 
 local function OnEaten(item, eater)
     if eater ~= nil and eater:HasTag("player") then
@@ -84,6 +149,10 @@ AddComponentAction("USEITEM", "inventoryitem", function(inst, doer, target, acti
     if right and IsManure(inst) and target.prefab == "beefalo" and target:HasTag("trader")
         and not G.table.contains(actions, G.ACTIONS.FEED) then
         table.insert(actions, G.ACTIONS.FEED)
+    end
+    if right and IsManure(inst) and target ~= nil and target:HasTag(REPAIR_TAG)
+        and not G.table.contains(actions, repair_action) then
+        table.insert(actions, repair_action)
     end
 end)
 

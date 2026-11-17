@@ -10,8 +10,12 @@ package.path = 'scripts/?.lua;' .. package.path
 AddModRPCHandler = function(_, name, fn) assert(name == 'drop'); handler = fn end
 AddIngredientValues = function() end
 AddPrefabPostInit = function() end
+AddPrefabPostInitAny = function() end
 AddComponentAction = function() end
 AddPlayerPostInit = function(fn) playerinit = fn end
+AddAction = function(_, _, fn) return { fn = fn } end
+ActionHandler = function() return {} end
+AddStategraphActionHandler = function() end
 GetModRPC = function() return {} end
 SendModRPCToServer = function() requests = requests + 1 end
 dofile('modmain.lua')
