@@ -239,11 +239,11 @@ local function ExtendMermManureLoyalty(inst)
                 Observe(nearby)
             end
         end
-        local ok, result = pcall(old_accept, merm, giver, item, ...)
+        local ok, result = G.pcall(old_accept, merm, giver, item, ...)
         for target in pairs(observed) do
             target:RemoveEventCallback("gainloyalty", OnGainLoyalty)
         end
-        if not ok then error(result) end
+        if not ok then G.error(result) end
         for target in pairs(affected) do MakeManureFollowerPermanent(target, giver) end
         return result
     end

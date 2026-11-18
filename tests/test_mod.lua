@@ -1,5 +1,6 @@
 local prefabs, actions, playerinit, ingredients, repair_action = {}, {}, nil, {}, nil
 GLOBAL = { FOODTYPE = { GENERIC = 'GENERIC' }, TheWorld = { ismastersim = true }, ACTIONS = { EAT = {}, FEED = {}, FEEDPLAYER = {} }, table = { contains = function(t, v) for _, x in ipairs(t) do if x == v then return true end end return false end } }
+GLOBAL.pcall, GLOBAL.error = pcall, error
 AddIngredientValues = function(names, tags) for _, name in ipairs(names) do ingredients[name] = tags end end
 AddModRPCHandler = function() end
 AddAction = function(_, _, fn) repair_action = { fn = fn }; return repair_action end
@@ -82,7 +83,10 @@ for _, prefab in ipairs({ 'merm', 'mermguard' }) do
         nearby.events.gainloyalty(nearby, { leader = giver })
     end }
     prefabs[prefab](merm)
+    local saved_pcall, saved_error = pcall, error
+    pcall, error = nil, nil
     merm.components.trader.onaccept(merm, giver, { prefab = 'guano' })
+    pcall, error = saved_pcall, saved_error
     for _, target in ipairs({ merm, nearby }) do
         assert(target.components.follower.neverexpire and target.components.follower.cancelled)
         assert(target.events.gainloyalty == nil)
