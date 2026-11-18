@@ -48,13 +48,35 @@ local pig = { components = { trader = trader, follower = follower,
 local giver = { components = { leader = { AddFollower = function() end } },
     IsValid = function() return true end, HasTag = function() return false end, PushEvent = function() end }
 prefabs.pigman(pig)
-for _, case in ipairs({ {'poop',7200}, {'guano',14400} }) do
+for _, case in ipairs({ {'poop',43200}, {'guano',43200} }) do
     local item = { prefab = case[1], IsValid = function() return true end,
         components = { edible = {}, inventoryitem = { GetGrandOwner = function() return pig end } } }
     assert(trader.test(pig,item,giver)); trader.onaccept(pig,giver,item)
     assert(loyalty == case[2] and follower.maxfollowtime == 1200)
 end
 assert(original == 2 and trader.test(pig,{prefab='meat'},giver) == false)
+
+for _, prefab in ipairs({ 'merm', 'mermguard' }) do
+    local merm_loyalty, merm_original = 0, 0
+    local merm_follower = {
+        maxfollowtime = 2400,
+        GetLeader = function() return giver end,
+        AddLoyaltyTime = function(self, n)
+            assert(self.maxfollowtime >= n)
+            merm_loyalty = n
+        end,
+    }
+    local merm_trader = {
+        onaccept = function() merm_original = merm_original + 1 end,
+    }
+    local merm = { components = { trader = merm_trader, follower = merm_follower } }
+    prefabs[prefab](merm)
+    local item = { prefab = 'guano' }
+    merm_trader.onaccept(merm, giver, item)
+    assert(merm_original == 1 and merm_loyalty == 43200)
+    assert(merm_follower.maxfollowtime == 43200)
+end
+
 for _, name in ipairs({'wilson','willow','wolfgang','wendy','wx78','wickerbottom','woodie','wes','waxwell','wathgrithr','webber','winona','warly','wortox','wormwood','wurt','walter','wanda','wonkey','generic'}) do
     assert(speech[name] and speech[name].poop and speech[name].guano, name)
 end

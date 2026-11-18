@@ -4,6 +4,7 @@ local lines = require "can_cook_shit_speech"
 local RPC_NAMESPACE = "cancookshit_shift"
 local HOLD_INTERVAL = 5
 local REPAIR_TAG = "cancookshit_repairable"
+local MANURE_LOYALTY_DURATION = 12 * 60 * 60
 
 print("[CanCookShit] startup: ActionHandler=" .. type(G.ActionHandler)
     .. ", AddAction=" .. type(AddAction)
@@ -194,13 +195,29 @@ AddPrefabPostInit("pigman", function(inst)
             giver:PushEvent("makefriend")
             giver.components.leader:AddFollower(pig)
             local old_max = follower.maxfollowtime
-            local duration = item.prefab == "poop" and 7200 or 14400
-            follower.maxfollowtime = math.max(old_max or 0, 14400)
-            follower:AddLoyaltyTime(duration)
+            follower.maxfollowtime = math.max(old_max or 0, MANURE_LOYALTY_DURATION)
+            follower:AddLoyaltyTime(MANURE_LOYALTY_DURATION)
             follower.maxfollowtime = old_max
         end
     end
 end)
+
+local function ExtendMermManureLoyalty(inst)
+    if not G.TheWorld.ismastersim or inst.components == nil then return end
+    local trader, follower = inst.components.trader, inst.components.follower
+    if trader == nil or follower == nil or trader.onaccept == nil then return end
+    local old_accept = trader.onaccept
+    trader.onaccept = function(merm, giver, item, ...)
+        old_accept(merm, giver, item, ...)
+        if not IsManure(item) or giver == nil or not giver:IsValid() then return end
+        if follower:GetLeader() ~= giver then return end
+        follower.maxfollowtime = MANURE_LOYALTY_DURATION
+        follower:AddLoyaltyTime(MANURE_LOYALTY_DURATION)
+    end
+end
+
+AddPrefabPostInit("merm", ExtendMermManureLoyalty)
+AddPrefabPostInit("mermguard", ExtendMermManureLoyalty)
 
 AddPrefabPostInit("beefalo", function(inst)
     if not G.TheWorld.ismastersim or inst.components.eater == nil then return end
