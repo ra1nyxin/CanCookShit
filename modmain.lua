@@ -208,11 +208,31 @@ local function ExtendMermManureLoyalty(inst)
     if trader == nil or follower == nil or trader.onaccept == nil then return end
     local old_accept = trader.onaccept
     trader.onaccept = function(merm, giver, item, ...)
+        local previous_followers = {}
+        local leader = giver ~= nil and giver.components ~= nil and giver.components.leader or nil
+        if leader ~= nil and leader.followers ~= nil then
+            for existing in pairs(leader.followers) do
+                previous_followers[existing] = true
+            end
+        end
         old_accept(merm, giver, item, ...)
         if not IsManure(item) or giver == nil or not giver:IsValid() then return end
-        if follower:GetLeader() ~= giver then return end
-        follower.maxfollowtime = MANURE_LOYALTY_DURATION
-        follower:AddLoyaltyTime(MANURE_LOYALTY_DURATION)
+        local function ExtendFollower(target)
+            if target == nil or target.components == nil then return end
+            local target_follower = target.components.follower
+            if target_follower == nil or target_follower:GetLeader() ~= giver then return end
+            target_follower.maxfollowtime = MANURE_LOYALTY_DURATION
+            target_follower:AddLoyaltyTime(MANURE_LOYALTY_DURATION)
+        end
+        ExtendFollower(merm)
+        if leader ~= nil and leader.followers ~= nil then
+            for nearby in pairs(leader.followers) do
+                if not previous_followers[nearby] and nearby ~= merm
+                    and nearby.HasTag ~= nil and nearby:HasTag("merm") then
+                    ExtendFollower(nearby)
+                end
+            end
+        end
     end
 end
 

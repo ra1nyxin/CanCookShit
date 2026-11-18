@@ -58,6 +58,7 @@ assert(original == 2 and trader.test(pig,{prefab='meat'},giver) == false)
 
 for _, prefab in ipairs({ 'merm', 'mermguard' }) do
     local merm_loyalty, merm_original = 0, 0
+    local nearby_loyalty = 0
     local merm_follower = {
         maxfollowtime = 2400,
         GetLeader = function() return giver end,
@@ -66,8 +67,16 @@ for _, prefab in ipairs({ 'merm', 'mermguard' }) do
             merm_loyalty = n
         end,
     }
+    local nearby = { components = { follower = {
+        GetLeader = function() return giver end,
+        AddLoyaltyTime = function(self, n) nearby_loyalty = n end,
+    } }, HasTag = function(_, tag) return tag == 'merm' end }
+    giver.components.leader.followers = {}
     local merm_trader = {
-        onaccept = function() merm_original = merm_original + 1 end,
+        onaccept = function()
+            merm_original = merm_original + 1
+            giver.components.leader.followers[nearby] = true
+        end,
     }
     local merm = { components = { trader = merm_trader, follower = merm_follower } }
     prefabs[prefab](merm)
@@ -75,6 +84,7 @@ for _, prefab in ipairs({ 'merm', 'mermguard' }) do
     merm_trader.onaccept(merm, giver, item)
     assert(merm_original == 1 and merm_loyalty == 43200)
     assert(merm_follower.maxfollowtime == 43200)
+    assert(nearby_loyalty == 43200 and nearby.components.follower.maxfollowtime == 43200)
 end
 
 for _, name in ipairs({'wilson','willow','wolfgang','wendy','wx78','wickerbottom','woodie','wes','waxwell','wathgrithr','webber','winona','warly','wortox','wormwood','wurt','walter','wanda','wonkey','generic'}) do
