@@ -39,52 +39,56 @@ for _, name in ipairs({'poop', 'guano'}) do
 end
 local speech = require 'can_cook_shit_speech'
 GLOBAL.TUNING = { PIG_FULL_LOYALTY_PERCENT = .9 }
-local loyalty, original = 0, 0
-local follower = { maxfollowtime = 1200, GetLeader = function() return nil end,
-    AddLoyaltyTime = function(self, n) assert(self.maxfollowtime >= n); loyalty = n end }
+local original = 0
+local current_leader
+local follower = { maxfollowtime = 1200, GetLeader = function() return current_leader end,
+    GetLoyaltyPercent = function() return 0 end,
+    CancelLoyaltyTask = function(self) self.cancelled = true end }
 local trader = { test = function() return false end, onaccept = function() original = original + 1 end }
 local pig = { components = { trader = trader, follower = follower,
-    combat = { TargetIs = function() return false end } }, HasTag = function() return false end }
-local giver = { components = { leader = { AddFollower = function() end } },
+    combat = { TargetIs = function() return false end } }, HasTag = function() return false end,
+    ListenForEvent = function(self, event, fn) self[event] = fn end,
+    RemoveEventCallback = function(self, event) self[event] = nil end }
+local giver = { components = { leader = { AddFollower = function(self, target) current_leader = giver end } },
     IsValid = function() return true end, HasTag = function() return false end, PushEvent = function() end }
+giver.components.leader.AddFollower = function() current_leader = giver end
 prefabs.pigman(pig)
-for _, case in ipairs({ {'poop',43200}, {'guano',43200} }) do
+for _, case in ipairs({ {'poop'}, {'guano'} }) do
     local item = { prefab = case[1], IsValid = function() return true end,
         components = { edible = {}, inventoryitem = { GetGrandOwner = function() return pig end } } }
     assert(trader.test(pig,item,giver)); trader.onaccept(pig,giver,item)
-    assert(loyalty == case[2] and follower.maxfollowtime == 1200)
+    assert(follower.neverexpire and follower.cancelled)
+    pig.leaderchanged(pig, { old = giver, new = nil })
+    assert(not follower.neverexpire)
+    current_leader = nil
 end
 assert(original == 2 and trader.test(pig,{prefab='meat'},giver) == false)
 
 for _, prefab in ipairs({ 'merm', 'mermguard' }) do
-    local merm_loyalty, merm_original = 0, 0
-    local nearby_loyalty = 0
-    local merm_follower = {
-        maxfollowtime = 2400,
-        GetLeader = function() return giver end,
-        AddLoyaltyTime = function(self, n)
-            assert(self.maxfollowtime >= n)
-            merm_loyalty = n
-        end,
-    }
-    local nearby = { components = { follower = {
-        GetLeader = function() return giver end,
-        AddLoyaltyTime = function(self, n) nearby_loyalty = n end,
-    } }, HasTag = function(_, tag) return tag == 'merm' end }
-    giver.components.leader.followers = {}
-    local merm_trader = {
-        onaccept = function()
-            merm_original = merm_original + 1
-            giver.components.leader.followers[nearby] = true
-        end,
-    }
-    local merm = { components = { trader = merm_trader, follower = merm_follower } }
+    local function entity()
+        local inst = { components = {}, events = {}, Transform = { GetWorldPosition = function() return 0, 0, 0 end } }
+        inst.components.follower = { GetLeader = function() return giver end,
+            CancelLoyaltyTask = function(self) self.cancelled = true end }
+        function inst:ListenForEvent(name, fn) self.events[name] = fn end
+        function inst:RemoveEventCallback(name, fn) if self.events[name] == fn then self.events[name] = nil end end
+        function inst:HasTag(tag) return tag == 'mermguard' and prefab == 'mermguard' end
+        return inst
+    end
+    local merm, nearby = entity(), entity()
+    GLOBAL.TUNING.MERM_FOLLOWER_RADIUS, GLOBAL.TUNING.MERM_GUARD_FOLLOWER_RADIUS = 10, 15
+    GLOBAL.TheSim = { FindEntities = function() return { merm, nearby } end }
+    merm.components.trader = { onaccept = function()
+        merm.events.gainloyalty(merm, { leader = giver })
+        nearby.events.gainloyalty(nearby, { leader = giver })
+    end }
     prefabs[prefab](merm)
-    local item = { prefab = 'guano' }
-    merm_trader.onaccept(merm, giver, item)
-    assert(merm_original == 1 and merm_loyalty == 43200)
-    assert(merm_follower.maxfollowtime == 43200)
-    assert(nearby_loyalty == 43200 and nearby.components.follower.maxfollowtime == 43200)
+    merm.components.trader.onaccept(merm, giver, { prefab = 'guano' })
+    for _, target in ipairs({ merm, nearby }) do
+        assert(target.components.follower.neverexpire and target.components.follower.cancelled)
+        assert(target.events.gainloyalty == nil)
+        target.events.leaderchanged(target, { old = giver, new = nil })
+        assert(not target.components.follower.neverexpire)
+    end
 end
 
 for _, name in ipairs({'wilson','willow','wolfgang','wendy','wx78','wickerbottom','woodie','wes','waxwell','wathgrithr','webber','winona','warly','wortox','wormwood','wurt','walter','wanda','wonkey','generic'}) do

@@ -12,7 +12,7 @@
 沃利的便携烹饪锅部署后也可以使用这两种食材。
 喂皮弗娄牛可增加顺从、驯服、生命和饱食：粪肥分别为 5%、1.2%、6 和 10；鸟粪为 3%、1%、4 和 8。
 游戏中按住 Shift 五秒会掉落一份粪肥，持续按住则每五秒掉落一份。
-给猪人、鱼人或忠诚鱼人守卫喂粪肥或鸟粪，可将其忠诚时间延长至 12 小时（现实时间）。
+给猪人、鱼人或忠诚鱼人守卫喂粪肥或鸟粪可使其永久忠诚；鱼人被原版连带雇佣时也会永久忠诚。领导者死亡或离开后忠诚会结束。
 手持粪肥或鸟粪对着未满耐久或未满使用次数的物品右键，可以用一份食材恢复目标最大值的一半；支持使用次数、燃料值和护甲耐久，包括亮茄盔甲。
 
 服务器和所有客户端都需要启用此模组。
@@ -31,6 +31,6 @@ Manure keeps body temperature at 25 degrees for 30 minutes and halves hunger dra
 
 Hold Shift for five seconds to drop manure; keep holding to drop one every five seconds.
 
-Feed manure or guano to pigs, merms, or merm guards to extend their loyalty to 12 real-time hours.
+Feed manure or guano to pigs, merms, or merm guards for permanent loyalty, including merms recruited by the vanilla group effect. Loyalty ends when their leader dies or leaves.
 
 With manure or guano in hand, right-click an item with missing durability or uses to restore half of its maximum with one piece. This supports finite uses, fuel, and armor durability, including Lunar Plant armor.

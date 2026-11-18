@@ -1,7 +1,7 @@
 name = "能煮屎 / CanCookShit"
-description = "粪肥和鸟粪可以食用、入锅、喂食，可雇佣猪人、鱼人和忠诚鱼人守卫，也能修补耐久、暂时恒温并减缓饥饿。"
+description = "粪肥和鸟粪可以食用、入锅、喂食，可雇佣猪人、鱼人和忠诚鱼人守卫使其永久忠诚，也能修补耐久、暂时恒温并减缓饥饿。"
 author = "ra1nyxin"
-version = "1.0.16"
+version = "1.0.17"
 api_version = 10
 dst_compatible = true
 all_clients_require_mod = true

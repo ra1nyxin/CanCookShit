@@ -4,7 +4,6 @@ local lines = require "can_cook_shit_speech"
 local RPC_NAMESPACE = "cancookshit_shift"
 local HOLD_INTERVAL = 5
 local REPAIR_TAG = "cancookshit_repairable"
-local MANURE_LOYALTY_DURATION = 12 * 60 * 60
 
 print("[CanCookShit] startup: ActionHandler=" .. type(G.ActionHandler)
     .. ", AddAction=" .. type(AddAction)
@@ -161,6 +160,20 @@ AddComponentAction("USEITEM", "inventoryitem", function(inst, doer, target, acti
     end
 end)
 
+local function MakeManureFollowerPermanent(inst, giver)
+    local follower = inst ~= nil and inst.components ~= nil and inst.components.follower or nil
+    if follower == nil or follower:GetLeader() ~= giver or follower.neverexpire then return end
+    follower:CancelLoyaltyTask()
+    follower.neverexpire = true
+    local function OnLeaderChanged(target, data)
+        if data ~= nil and data.old == giver and data.new ~= giver then
+            follower.neverexpire = nil
+            target:RemoveEventCallback("leaderchanged", OnLeaderChanged)
+        end
+    end
+    inst:ListenForEvent("leaderchanged", OnLeaderChanged)
+end
+
 AddPrefabPostInit("pigman", function(inst)
     if not G.TheWorld.ismastersim or inst.components == nil then return end
     local trader = inst.components.trader
@@ -194,10 +207,7 @@ AddPrefabPostInit("pigman", function(inst)
             and giver.components.minigame_participator == nil then
             giver:PushEvent("makefriend")
             giver.components.leader:AddFollower(pig)
-            local old_max = follower.maxfollowtime
-            follower.maxfollowtime = math.max(old_max or 0, MANURE_LOYALTY_DURATION)
-            follower:AddLoyaltyTime(MANURE_LOYALTY_DURATION)
-            follower.maxfollowtime = old_max
+            MakeManureFollowerPermanent(pig, giver)
         end
     end
 end)
@@ -208,31 +218,34 @@ local function ExtendMermManureLoyalty(inst)
     if trader == nil or follower == nil or trader.onaccept == nil then return end
     local old_accept = trader.onaccept
     trader.onaccept = function(merm, giver, item, ...)
-        local previous_followers = {}
-        local leader = giver ~= nil and giver.components ~= nil and giver.components.leader or nil
-        if leader ~= nil and leader.followers ~= nil then
-            for existing in pairs(leader.followers) do
-                previous_followers[existing] = true
+        if not IsManure(item) or giver == nil or not giver:IsValid() then
+            return old_accept(merm, giver, item, ...)
+        end
+        local affected, observed = {}, {}
+        local function OnGainLoyalty(target, data)
+            if data ~= nil and data.leader == giver then affected[target] = true end
+        end
+        local function Observe(target)
+            if target ~= nil and not observed[target] and target.ListenForEvent ~= nil then
+                observed[target] = true
+                target:ListenForEvent("gainloyalty", OnGainLoyalty)
             end
         end
-        old_accept(merm, giver, item, ...)
-        if not IsManure(item) or giver == nil or not giver:IsValid() then return end
-        local function ExtendFollower(target)
-            if target == nil or target.components == nil then return end
-            local target_follower = target.components.follower
-            if target_follower == nil or target_follower:GetLeader() ~= giver then return end
-            target_follower.maxfollowtime = MANURE_LOYALTY_DURATION
-            target_follower:AddLoyaltyTime(MANURE_LOYALTY_DURATION)
-        end
-        ExtendFollower(merm)
-        if leader ~= nil and leader.followers ~= nil then
-            for nearby in pairs(leader.followers) do
-                if not previous_followers[nearby] and nearby ~= merm
-                    and nearby.HasTag ~= nil and nearby:HasTag("merm") then
-                    ExtendFollower(nearby)
-                end
+        Observe(merm)
+        if G.TheSim ~= nil and merm.Transform ~= nil then
+            local x, y, z = merm.Transform:GetWorldPosition()
+            local radius = merm:HasTag("mermguard") and G.TUNING.MERM_GUARD_FOLLOWER_RADIUS or G.TUNING.MERM_FOLLOWER_RADIUS
+            for _, nearby in ipairs(G.TheSim:FindEntities(x, y, z, radius, { "merm" })) do
+                Observe(nearby)
             end
         end
+        local ok, result = pcall(old_accept, merm, giver, item, ...)
+        for target in pairs(observed) do
+            target:RemoveEventCallback("gainloyalty", OnGainLoyalty)
+        end
+        if not ok then error(result) end
+        for target in pairs(affected) do MakeManureFollowerPermanent(target, giver) end
+        return result
     end
 end
 
